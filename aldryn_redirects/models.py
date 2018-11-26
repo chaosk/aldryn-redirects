@@ -9,6 +9,7 @@ from django.utils.translation import ugettext_lazy as _, ugettext
 from parler.models import TranslatableModel, TranslatedFields
 from six.moves.urllib.parse import urlparse, urljoin
 
+from .constants import REDIRECT_TYPES
 from .managers import StaticRedirectManager, StaticRedirectInboundRouteQueryParamManager
 from .utils import add_query_params_to_url
 from .validators import validate_inbound_route, validate_outbound_route
@@ -16,6 +17,12 @@ from .validators import validate_inbound_route, validate_outbound_route
 
 @python_2_unicode_compatible
 class Redirect(TranslatableModel):
+    origin = models.ForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+    )
     site = models.ForeignKey(
         Site, related_name='aldryn_redirects_redirect_set')
     old_path = models.CharField(
@@ -33,12 +40,17 @@ class Redirect(TranslatableModel):
                 "starting with 'http://'."
             ),
         ),
+        redirect_type=models.IntegerField(
+            verbose_name=_('type'),
+            choices=REDIRECT_TYPES,
+            default=REDIRECT_TYPES[1][0],
+        ),
     )
 
     class Meta:
         verbose_name = _('Multilanguage Redirect')
         verbose_name_plural = _('Multilanguage Redirects')
-        unique_together = (('site', 'old_path'),)
+        # unique_together = (('site', 'old_path'),)
         ordering = ('old_path',)
 
     def __str__(self):
@@ -52,12 +64,18 @@ class Redirect(TranslatableModel):
 
 
 class StaticRedirect(models.Model):
+    origin = models.ForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+    )
     sites = models.ManyToManyField('sites.Site', related_name='+')
     inbound_route = models.CharField(
         _('Redirect from'),
         max_length=255,
         db_index=True,
-        validators=[validate_inbound_route, ],
+        validators=[validate_inbound_route],
         help_text=_('Redirect origin. Do not provide the domain. Always add a leading slash here.'),
     )
     outbound_route = models.CharField(
@@ -65,6 +83,11 @@ class StaticRedirect(models.Model):
         max_length=255,
         validators=[validate_outbound_route, ],
         help_text=_('Redirect destination. Domain is not required (defaults to inbound route domain).'),
+    )
+    redirect_type = models.IntegerField(
+        verbose_name=_('type'),
+        choices=REDIRECT_TYPES,
+        default=REDIRECT_TYPES[1][0],
     )
 
     objects = StaticRedirectManager.as_manager()

@@ -4,16 +4,24 @@ from django import http
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.db.models import Q
+try:
+    from django.utils.deprecation import MiddlewareMixin
+except ImportError:
+    # Django<1.10
+    MiddlewareMixin = object
 
 from .models import Redirect, StaticRedirect
 
 
-class RedirectFallbackMiddleware(object):
+class RedirectFallbackMiddleware(MiddlewareMixin):
     def process_request(self, request):
         static_redirect = StaticRedirect.objects.get_for_request(request)
         if static_redirect:
             full_domain = '{}://{}'.format(request.scheme, Site.objects.get(id=settings.SITE_ID).domain)
-            return http.HttpResponsePermanentRedirect(static_redirect.get_outbound_url(full_domain))
+            return http.HttpResponse(
+                static_redirect.get_outbound_url(full_domain),
+                status=static_redirect.redirect_type,
+            )
 
         path = request.path_info
         path_with_queries = request.get_full_path()
@@ -41,4 +49,4 @@ class RedirectFallbackMiddleware(object):
 
         if new_path in (None, ''):
             return http.HttpResponseGone()
-        return http.HttpResponsePermanentRedirect(new_path)
+        return http.HttpResponse(new_path, status=r.safe_translation_getter('redirect_type'))
