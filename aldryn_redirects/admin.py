@@ -14,7 +14,7 @@ from parler.admin import TranslatableAdmin
 
 from aldryn_translation_tools.admin import AllTranslationsMixin
 
-from .forms import RedirectsImportForm, StaticRedirectsImportForm
+from .forms import RedirectForm, RedirectsImportForm, StaticRedirectForm, StaticRedirectsImportForm
 from .models import Redirect, StaticRedirect, StaticRedirectInboundRouteQueryParam
 
 
@@ -44,8 +44,8 @@ class RedirectAdmin(DeletionMixin, AllTranslationsMixin, TranslatableAdmin):
     list_display = ('old_path',)
     list_filter = ('site',)
     search_fields = ('old_path', 'translations__new_path')
-    exclude = ('origin',)
     radio_fields = {'site': admin.VERTICAL}
+    form = RedirectForm
     export_filename = 'redirects-%Y-%m-%d.csv'
     export_headers = ['Domain', 'Old', 'New', 'Language']
 
@@ -138,8 +138,8 @@ class StaticRedirectAdmin(DeletionMixin, admin.ModelAdmin):
     filter_horizontal = ('sites',)
     list_filter = ('sites',)
     list_display = ('inbound_route', 'outbound_route')
+    form = StaticRedirectForm
     search_fields = list_display
-    exclude = ('origin',)
 
     # Custom attributes
     export_filename = 'static-redirects-%Y-%m-%d.csv'

@@ -5,8 +5,10 @@ from tablib import Dataset
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
+from parler.forms import TranslatableModelForm
 
 from .importers import RedirectImporter, StaticRedirectImporter
+from .models import Redirect, StaticRedirect
 
 
 class RedirectsImportForm(forms.Form):
@@ -40,3 +42,48 @@ class RedirectsImportForm(forms.Form):
 
 class StaticRedirectsImportForm(RedirectsImportForm):
     importer_class = StaticRedirectImporter
+
+
+class RedirectForm(TranslatableModelForm):
+
+    def clean(self):
+        cleaned_data = super().clean()
+        old_path = cleaned_data['old_path']
+        qs = Redirect.objects.filter(site=cleaned_data['site'], old_path=old_path)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError({
+                'old_path': _('Redirect with "{}" source path exists.').format(
+                    old_path,
+                ),
+            })
+        return cleaned_data
+
+    class Meta:
+        model = Redirect
+        exclude = ('origin', )
+
+
+class StaticRedirectForm(forms.ModelForm):
+
+    def clean(self):
+        cleaned_data = super().clean()
+        inbound_route = cleaned_data['inbound_route']
+        qs = StaticRedirect.objects.filter(
+            sites__in=cleaned_data['sites'],
+            inbound_route=inbound_route,
+        )
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError({
+                'inbound_route': _('Redirect with "{}" source path exists.').format(
+                    inbound_route,
+                ),
+            })
+        return cleaned_data
+
+    class Meta:
+        model = StaticRedirect
+        exclude = ('origin', )

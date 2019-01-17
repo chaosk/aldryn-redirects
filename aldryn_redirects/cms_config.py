@@ -34,6 +34,7 @@ def copy_static_redirect(old):
 
 class RedirectsCMSConfig(CMSAppConfig):
     djangocms_versioning_enabled = True
+    djangocms_moderation_enabled = True
     versioning = [
         VersionableItem(
             content_model=Redirect,
@@ -48,3 +49,4 @@ class RedirectsCMSConfig(CMSAppConfig):
             on_draft_create=on_draft_create,
         ),
     ]
+    moderated_models = [Redirect, StaticRedirect]

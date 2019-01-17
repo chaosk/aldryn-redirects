@@ -7,6 +7,8 @@ HELPER_SETTINGS = {
         'aldryn_redirects.middleware.RedirectFallbackMiddleware',
     ],
     'INSTALLED_APPS': [
+        'parler',
+        'djangocms_versioning',
     ],
     'ALLOWED_HOSTS': [
         'localhost'

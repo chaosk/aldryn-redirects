@@ -18,10 +18,9 @@ class RedirectFallbackMiddleware(MiddlewareMixin):
         static_redirect = StaticRedirect.objects.get_for_request(request)
         if static_redirect:
             full_domain = '{}://{}'.format(request.scheme, Site.objects.get(id=settings.SITE_ID).domain)
-            return http.HttpResponse(
-                static_redirect.get_outbound_url(full_domain),
-                status=static_redirect.redirect_type,
-            )
+            response = http.HttpResponse(status=static_redirect.redirect_type)
+            response['Location'] = static_redirect.get_outbound_url(full_domain)
+            return response
 
         path = request.path_info
         path_with_queries = request.get_full_path()
@@ -49,4 +48,6 @@ class RedirectFallbackMiddleware(MiddlewareMixin):
 
         if new_path in (None, ''):
             return http.HttpResponseGone()
-        return http.HttpResponse(new_path, status=r.safe_translation_getter('redirect_type'))
+        response = http.HttpResponse(status=r.safe_translation_getter('redirect_type'))
+        response['Location'] = new_path
+        return response
